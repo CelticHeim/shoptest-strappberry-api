@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PurchaseController;
+use App\Http\Controllers\Api\ShoppingController;
 use Illuminate\Support\Facades\Route;
 
 // Public auth routes
@@ -19,6 +20,9 @@ Route::prefix('auth')->middleware('auth:api')->controller(AuthController::class)
 
 // Product routes
 Route::apiResource('products', ProductController::class)->only(['index', 'store', 'update', 'destroy']);
+
+// Public shopping store routes
+Route::get('/shopping', [ShoppingController::class, 'index'])->name('shopping.index');
 
 // Protected purchase routes
 Route::prefix('purchases')->middleware('auth:api')->controller(PurchaseController::class)->group(function () {

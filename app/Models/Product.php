@@ -22,4 +22,19 @@ class Product extends Model {
     protected $casts = [
         'price' => 'decimal:2',
     ];
+
+    public function scopeFilterByName($query, $name) {
+        if (!$name) {
+            return $query;
+        }
+        return $query->where('name', 'like', '%' . $name . '%');
+    }
+
+    public function scopeFilterByCategories($query, $categories) {
+        if (!$categories) {
+            return $query;
+        }
+        $categoryArray = is_string($categories) ? explode(',', $categories) : $categories;
+        return $query->whereIn('category', $categoryArray);
+    }
 }

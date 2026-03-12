@@ -11,22 +11,11 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller {
     public function index(Request $request) {
-        $query = Product::query();
-
-        // Search by name
-        if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->input('search') . '%');
-        }
-
-        // Filter by categories
-        if ($request->has('categories')) {
-            $categories = explode(',', $request->input('categories'));
-            $query->whereIn('category', $categories);
-        }
-
-        // Pagination
         $perPage = $request->input('perPage', 15);
-        $products = $query->paginate($perPage);
+        
+        $products = Product::filterByName($request->input('search'))
+            ->filterByCategories($request->input('categories'))
+            ->paginate($perPage);
 
         return response()->json([
             'message' => 'Products retrieved successfully',
