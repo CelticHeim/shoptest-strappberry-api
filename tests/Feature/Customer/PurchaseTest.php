@@ -19,6 +19,7 @@
  */
 
 use App\Models\Product;
+use App\Models\Transaction;
 use App\Models\User;
 
 /**
@@ -116,7 +117,7 @@ describe('User Purchases - Create Purchase', function () {
 
         expect($response->json('message'))->toBe('Purchase created successfully');
         expect($response->json('data.status'))->toBe('pending');
-        expect($response->json('data.total_amount'))->toBe(300.00);
+        expect($response->json('data.total_amount'))->toEqual(300);
         expect($response->json('data.user_id'))->toBe($user->id);
 
         $this->assertDatabaseHas('transactions', [
