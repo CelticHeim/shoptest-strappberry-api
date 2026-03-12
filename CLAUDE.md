@@ -7,7 +7,7 @@ Backend API para la **prueba técnica de aplicación de tienda en línea** de la
 - **Framework**: Laravel 12
 - **PHP**: 8.2+
 - **Autenticación**: JWT (JSON Web Tokens)
-- **Testing**: Pest 3.8 (TDD)
+- **Testing**: Pest 4 (TDD)
 - **Metodología**: Test-Driven Development (TDD)
 
 ## Convenciones de Nombres
