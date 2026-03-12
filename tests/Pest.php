@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Tests\TestCase;
 
 /*
@@ -43,7 +44,25 @@ pest()->extend(TestCase::class)
 |
 */
 
-function something()
-{
-    // ..
+function generateJWTToken(User $user): string {
+    return auth('api')->login($user);
+}
+
+function generateExpiredJWTToken(User $user): string {
+    // Generate a random string that looks like a JWT but with an expired timestamp
+    // Format: header.payload.signature
+    $header = base64_encode(json_encode(['typ' => 'JWT', 'alg' => 'HS256']));
+    
+    // Create a payload with expired time
+    $payload = json_encode([
+        'sub' => $user->id,
+        'iat' => now()->subHours(2)->timestamp,
+        'exp' => now()->subMinutes(1)->timestamp,  // Expired 1 minute ago
+    ]);
+    $payloadEncoded = base64_encode($payload);
+    
+    // Signature (doesn't matter for the test, JWT will validate and find it expired)
+    $signature = base64_encode('expired');
+    
+    return $header . '.' . $payloadEncoded . '.' . $signature;
 }
