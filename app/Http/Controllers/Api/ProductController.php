@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller {
     public function index(Request $request) {
-        $perPage = $request->input('perPage', 15);
-        
+        $perPage = $request->input('perPage', null);
+
         $products = Product::filterByName($request->input('search'))
             ->filterByCategories($request->input('categories'))
             ->paginate($perPage);
