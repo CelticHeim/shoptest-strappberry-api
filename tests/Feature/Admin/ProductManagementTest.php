@@ -25,6 +25,7 @@
  * - El producto eliminado no aparece en la lista
  */
 
+use App\Models\Product;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
