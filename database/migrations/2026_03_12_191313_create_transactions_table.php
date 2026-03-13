@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id')->nullable();
             $table->enum('status', ['pending', 'paid', 'rejected'])->default('pending');
             $table->decimal('total_amount', 10, 2);
-            $table->unsignedBigInteger('mercado_pago_payment_id')->nullable();
+            $table->string('mercado_pago_payment_id')->nullable();
             $table->timestamps();
         });
     }

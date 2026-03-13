@@ -36,9 +36,8 @@ Route::get('/shopping', [ShoppingController::class, 'index'])->name('shopping.in
 
 // Protected checkout routes (customer only)
 Route::prefix('checkout')->middleware(['auth:api', 'customer'])->controller(CheckoutController::class)->group(function () {
-    Route::post('/', 'createPreference')->name('checkout.create');
-    Route::get('/verify-payment/{payment_id}', 'verifyPayment')->name('checkout.verify');
-    Route::post('/confirm', 'confirmPurchase')->name('checkout.confirm');
+    Route::post('/', 'store')->name('checkout.store');
+    Route::post('/pay', 'processPayment')->name('checkout.pay');
 });
 
 // Protected purchase routes (customer only)

@@ -3,21 +3,30 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\Purchase\ConfirmPurchaseRequest;
-use App\Http\Requests\Api\Purchase\CreatePreferenceRequest;
+use App\Http\Requests\Api\Checkout\CreateCheckoutOrderRequest;
+use App\Http\Requests\Api\Checkout\ProcessCheckoutPaymentRequest;
 use App\Models\Product;
 use App\Models\Transaction;
-use Illuminate\Http\Request;
+use App\Services\MercadoPagoOrderService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http;
 
 class CheckoutController extends Controller {
-    public function createPreference(CreatePreferenceRequest $request) {
-        // Fetch real product data from database
+    private MercadoPagoOrderService $mpService;
+
+    public function __construct(MercadoPagoOrderService $mpService) {
+        $this->mpService = $mpService;
+    }
+
+    /**
+     * Crear orden de pago en Mercado Pago (Checkout API vía Orders)
+     * POST /api/checkout
+     */
+    public function store(CreateCheckoutOrderRequest $request) {
+        // Validar y obtener productos reales
         $productIds = array_column($request->validated()['items'], 'product_id');
         $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
-        // Build Mercado Pago items array with real data from database
+        // Construir items para Mercado Pago
         $items = [];
         $totalAmount = 0;
 
@@ -26,81 +35,41 @@ class CheckoutController extends Controller {
             $subtotal = $product->price * $item['quantity'];
 
             $items[] = [
-                'id' => (string) $product->id,
+                'sku_number' => (string) $product->id,
+                'category' => 'product',
                 'title' => $product->name,
-                'quantity' => $item['quantity'],
+                'description' => $product->description ?? '',
                 'unit_price' => (float) $product->price,
+                'quantity' => $item['quantity'],
+                'unit_measure' => 'unit',
+                'total_amount' => (float) $subtotal,
             ];
 
             $totalAmount += $subtotal;
         }
 
-        // Create Mercado Pago preference
-        $redirectUrl = config('services.mercado_pago.redirect_url');
-        $mpResponse = Http::withToken(config('services.mercado_pago.access_token'))
-            ->post('https://api.mercadopago.com/checkout/preferences', [
-                'items' => $items,
-                'back_urls' => [
-                    'success' => $redirectUrl,
-                    'failure' => str_replace('/checkout-success', '/checkout-failure', $redirectUrl),
-                    'pending' => str_replace('/checkout-success', '/checkout-pending', $redirectUrl),
-                ],
-                'auto_return' => 'approved',
-            ]);
-
-        if (!$mpResponse->successful()) {
-            return response()->json([
-                'message' => 'Error creating payment preference',
-            ], 400);
-        }
+        // Crear orden en Mercado Pago
+        $mpOrder = $this->mpService->createOrder($items, $totalAmount);
 
         return response()->json([
-            'message' => 'Payment preference created successfully',
+            'message' => 'Checkout order created',
             'data' => [
-                'preference_id' => $mpResponse->json('id'),
-                'init_point' => $mpResponse->json('init_point'),
+                'order_id' => $mpOrder['id'],
+                'total_amount' => (float) $mpOrder['total_amount'],
             ],
         ], 201);
     }
 
-    public function verifyPayment($paymentId) {
-        // Query Mercado Pago API for payment status
-        $mpResponse = Http::withToken(config('services.mercado_pago.access_token'))
-            ->get("https://api.mercadopago.com/v1/payments/{$paymentId}");
-
-        if (!$mpResponse->successful()) {
-            return response()->json([
-                'message' => 'Failed to verify payment',
-            ], 400);
-        }
-
-        return response()->json([
-            'message' => 'Payment status retrieved',
-            'data' => [
-                'payment_id' => $mpResponse->json('id'),
-                'status' => $mpResponse->json('status'),
-                'amount' => (float) $mpResponse->json('transaction_amount'),
-                'external_reference' => $mpResponse->json('external_reference'),
-            ],
-        ]);
-    }
-
-    public function confirmPurchase(ConfirmPurchaseRequest $request) {
-        // Verify payment is approved in Mercado Pago
-        $mpResponse = Http::withToken(config('services.mercado_pago.access_token'))
-            ->get("https://api.mercadopago.com/v1/payments/{$request->validated()['payment_id']}");
-
-        if (!$mpResponse->successful() || $mpResponse->json('status') !== 'approved') {
-            return response()->json([
-                'message' => 'Payment not approved',
-            ], 422);
-        }
-
-        // Fetch real product data from database
+    /**
+     * Procesar pago de una orden (Checkout API vía Orders)
+     * POST /api/checkout/pay
+     */
+    public function processPayment(ProcessCheckoutPaymentRequest $request) {
+        // Validar y obtener productos reales
         $productIds = array_column($request->validated()['items'], 'product_id');
         $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
-        // Calculate total amount
+        // Calcular monto total
         $totalAmount = 0;
         $productsToAttach = [];
 
@@ -116,24 +85,46 @@ class CheckoutController extends Controller {
             ];
         }
 
-        // Create transaction
+        // Procesar pago en Mercado Pago Payments API
+        $paymentData = [
+            'amount' => $totalAmount,
+            'token' => $request->validated()['token'],
+            'payment_method_id' => $request->validated()['payment_method_id'] ?? 'credit_card',
+            'installments' => $request->validated()['installments'] ?? 1,
+            'payer_email' => Auth::user()->email,
+        ];
+
+        $mpPayment = $this->mpService->processOrderPayment(
+            $request->validated()['order_id'],
+            $paymentData
+        );
+
+        // Crear transacción en BD solo si el pago fue aprobado
+        // Status puede ser: approved, pending, in_process, rejected, cancelled, refunded
+        if (!in_array($mpPayment['status'], ['approved', 'in_process'])) {
+            return response()->json([
+                'message' => 'Payment failed or pending',
+                'status' => $mpPayment['status'],
+                'status_detail' => $mpPayment['status_detail'] ?? null,
+            ], 400);
+        }
+
         $transaction = Transaction::create([
             'user_id' => Auth::id(),
-            'status' => 'paid',
+            'status' => $mpPayment['status'] === 'approved' ? 'paid' : 'pending',
             'total_amount' => $totalAmount,
-            'mercado_pago_payment_id' => $request->validated()['payment_id'],
+            'mercado_pago_payment_id' => (string) $mpPayment['id'],
         ]);
 
-        // Link products to transaction
+        // Vincular productos a la transacción
         $transaction->products()->attach($productsToAttach);
 
         return response()->json([
-            'message' => 'Purchase confirmed successfully',
+            'message' => 'Payment processed successfully',
             'data' => [
                 'id' => $transaction->id,
                 'status' => $transaction->status,
                 'total_amount' => $transaction->total_amount,
-                'mercado_pago_payment_id' => $transaction->mercado_pago_payment_id,
                 'products' => $transaction->products()->get()->map(fn($product) => [
                     'id' => $product->id,
                     'name' => $product->name,

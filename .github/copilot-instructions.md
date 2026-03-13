@@ -1,5 +1,20 @@
 # ShopTest API - Copilot Instructions
 
+## ⚠️ PEST SKILL REQUIREMENT (MANDATORY)
+
+**BEFORE implementing any backend feature or test, you MUST:**
+
+1. **Consult the Pest v4 skill documentation** if it's available
+2. **Review existing tests** in `tests/Feature/` and `tests/Unit/` directories
+3. **Follow the AAA pattern** (Arrange/Act/Assert) with explicit comments before writing ANY code
+4. **Write tests FIRST** (Test-Driven Development), then write the implementation
+5. **Use the requerimientos pattern** for test organization as documented below
+6. **Run tests after implementation** to verify everything passes
+
+**This is non-negotiable. Implementation without corresponding tests violates the TDD methodology of this project.**
+
+---
+
 ## Descripción General
 Backend API para la **prueba técnica de aplicación de tienda en línea** de la empresa **StrappBerry**, desarrollado con **Laravel 12** y **PHP 8.2**. Utiliza **JWT (JSON Web Tokens)** para autenticación y sigue **TDD (Test-Driven Development)** con **Pest** para el desarrollo.
 
@@ -209,14 +224,15 @@ php artisan test                          # Ejecutar todos los tests
 Al generar código para este proyecto:
 1. Formato K&R: llaves en misma línea, retornos tempranos, sin else/elseif
 2. Nombres: PascalCase (clases), camelCase (métodos), kebab-case (rutas)
-3. Migraciones: 
+3. **PEST REQUIREMENT**: Consult Pest skill and write tests FIRST before implementation
+4. Migraciones: 
    - Fase desarrollo → modificar directamente en lugar de crear "add_*"
    - Crear columnas con `unsignedBigInteger()` en la migración de creación
    - Registrar FKs en `3000_07_01_100000_add_foreign_keys.php` (se ejecuta al final)
-4. Form Requests: SIEMPRE crear para cada acción: `{Accion}{Recurso}Request` en `app/Http/Requests/Api/{Recurso}/`
-5. Tests: Patrón AAA (Arrange/Act/Assert) con comentarios explícitos; ubicar en `tests/Feature/Api/`
-6. Rutas: prefijos y grupos con `middleware('auth:sanctum')` en rutas protegidas
-7. Responses: siempre `response()->json()` con status code adecuado
-8. Validación: usar Form Request o `$request->validate()` en controladores
-9. Eloquent ORM para todas las interacciones con BD
-10. Try-Catch: SOLO para transacciones BD, no para validación o control de flujo normal
+5. Form Requests: SIEMPRE crear para cada acción: `{Accion}{Recurso}Request` en `app/Http/Requests/Api/{Recurso}/`
+6. Tests: Patrón AAA (Arrange/Act/Assert) con comentarios explícitos; ubicar en `tests/Feature/Api/`
+7. Rutas: prefijos y grupos con `middleware('auth:sanctum')` en rutas protegidas
+8. Responses: siempre `response()->json()` con status code adecuado
+9. Validación: usar Form Request o `$request->validate()` en controladores
+10. Eloquent ORM para todas las interacciones con BD
+11. Try-Catch: SOLO para transacciones BD, no para validación o control de flujo normal
