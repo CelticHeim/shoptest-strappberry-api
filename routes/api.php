@@ -19,7 +19,7 @@ Route::prefix('auth')->middleware('auth:api')->controller(AuthController::class)
 });
 
 // Product routes
-Route::apiResource('products', ProductController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::apiResource('products', ProductController::class);
 
 // Public shopping store routes
 Route::get('/shopping', [ShoppingController::class, 'index'])->name('shopping.index');
@@ -30,4 +30,3 @@ Route::prefix('purchases')->middleware('auth:api')->controller(PurchaseControlle
     Route::post('/', 'store')->name('purchases.store');
     Route::put('/{transaction}', 'update')->name('purchases.update');
 });
-

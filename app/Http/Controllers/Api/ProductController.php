@@ -23,14 +23,23 @@ class ProductController extends Controller {
         ]);
     }
 
+    public function show(Product $product) {
+        return response()->json([
+            'message' => 'Product retrieved successfully',
+            'data' => $product,
+        ]);
+    }
+
     public function store(StoreProductRequest $request) {
         $data = $request->validated();
 
         // Handle image upload
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imagePath = $image->store('products', 'public');
-            $data['image'] = basename($imagePath);
+            $ext = $image->getClientOriginalExtension();
+            $fileName = now()->format('m_d_Y') . '.' . $ext;
+            $image->storeAs('products', $fileName, 'public');
+            $data['image'] = $fileName;
         }
 
         $product = Product::create($data);
@@ -47,13 +56,16 @@ class ProductController extends Controller {
         // Handle image upload
         if ($request->hasFile('image')) {
             // Delete old image if exists
-            if ($product->image && Storage::disk('public')->exists('products/' . $product->image)) {
-                Storage::disk('public')->delete('products/' . $product->image);
+            $oldImageName = $product->getRawOriginal('image');
+            if ($oldImageName && Storage::disk('public')->exists('products/' . $oldImageName)) {
+                Storage::disk('public')->delete('products/' . $oldImageName);
             }
 
             $image = $request->file('image');
-            $imagePath = $image->store('products', 'public');
-            $data['image'] = basename($imagePath);
+            $ext = $image->getClientOriginalExtension();
+            $fileName = now()->format('m_d_Y') . '.' . $ext;
+            $image->storeAs('products', $fileName, 'public');
+            $data['image'] = $fileName;
         }
 
         $product->update($data);

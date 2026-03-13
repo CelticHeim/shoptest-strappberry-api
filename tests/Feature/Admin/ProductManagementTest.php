@@ -15,6 +15,10 @@
  * - Se puede limitar el número de resultados por página usando query param 'perPage'
  * - Se puede buscar, filtrar y limitar resultados simultáneamente
  *
+ * // Ver detalles de un producto
+ * - Se puede obtener un producto específico por id
+ * - Retorna 404 cuando el producto no existe
+ *
  * // Actualizar productos
  * - Se puede actualizar un producto existente
  * - La validación rechaza actualizaciones sin nombre o precio
@@ -23,6 +27,11 @@
  * // Eliminar productos
  * - Se puede eliminar un producto (soft delete)
  * - El producto eliminado no aparece en la lista
+ *
+ * // Almacenamiento y acceso de imágenes
+ * - Las imágenes se guardan con formato de fecha MM_DD_YYYY.extension
+ * - El endpoint index() devuelve la URL completa de la imagen
+ * - El endpoint show() devuelve la URL completa de la imagen
  */
 
 use App\Models\Product;
@@ -109,7 +118,9 @@ describe('Product Creation', function () {
 
         // Assert
         $response->assertCreated();
-        Storage::disk('public')->assertExists('products/' . $response->json('data.image'));
+        $imageUrl = $response->json('data.image');
+        $imageName = basename($imageUrl);
+        Storage::disk('public')->assertExists('products/' . $imageName);
     });
 });
 
@@ -258,6 +269,41 @@ describe('Listing and Searching Products', function () {
     });
 });
 
+describe('Viewing Product Details', function () {
+    it('can retrieve a single product by id', function () {
+        // Arrange
+        $product = Product::factory()->create([
+            'name' => 'Laptop Dell XPS 13',
+            'price' => 1299.99,
+            'category' => 'Electronics',
+            'description' => 'High-performance laptop',
+            'image' => 'product.jpg',
+        ]);
+
+        // Act
+        $response = $this->getJson("/api/products/{$product->id}");
+
+        // Assert
+        $response->assertSuccessful()
+            ->assertJsonStructure(['message', 'data' => ['id', 'name', 'price', 'category', 'description', 'image']]);
+
+        expect($response->json('message'))->toBe('Product retrieved successfully');
+        expect($response->json('data.id'))->toBe($product->id);
+        expect($response->json('data.name'))->toBe('Laptop Dell XPS 13');
+        expect((float) $response->json('data.price'))->toBe(1299.99);
+        expect($response->json('data.category'))->toBe('Electronics');
+        expect($response->json('data.description'))->toBe('High-performance laptop');
+    });
+
+    it('returns 404 when product does not exist', function () {
+        // Act
+        $response = $this->getJson("/api/products/9999");
+
+        // Assert
+        $response->assertNotFound();
+    });
+});
+
 describe('Product Updates', function () {
     it('can update a product with all fields', function () {
         // Arrange
@@ -338,7 +384,9 @@ describe('Product Updates', function () {
 
         // Assert
         $response->assertSuccessful();
-        Storage::disk('public')->assertExists('products/' . $response->json('data.image'));
+        $imageUrl = $response->json('data.image');
+        $imageName = basename($imageUrl);
+        Storage::disk('public')->assertExists('products/' . $imageName);
     });
 });
 
@@ -366,5 +414,64 @@ describe('Product Deletion', function () {
         // Assert
         $response->assertSuccessful();
         expect($response->json('data'))->not->toContain(fn($item) => $item['id'] === $product->id);
+    });
+});
+
+describe('Image Storage and Accessibility', function () {
+    it('saves image with date format (MM_DD_YYYY) and returns full URL in index', function () {
+        // Arrange
+        Storage::fake('public');
+        $image = UploadedFile::fake()->image('product.png', 640, 480);
+
+        $productData = [
+            'name' => 'Laptop with Image',
+            'price' => 1299.99,
+            'category' => 'Electronics',
+            'image' => $image,
+        ];
+
+        // Act
+        $response = $this->postJson('/api/products', $productData);
+        $productId = $response->json('data.id');
+        $imageUrl = $response->json('data.image');
+        $imageName = basename($imageUrl);
+        $indexResponse = $this->getJson('/api/products');
+
+        // Assert
+        $response->assertCreated();
+        expect($imageName)->toMatch('/\d{2}_\d{2}_\d{4}\.\w+/'); // MM_DD_YYYY.ext format
+        
+        Storage::disk('public')->assertExists('products/' . $imageName);
+
+        $productFromList = collect($indexResponse->json('data.data'))
+            ->firstWhere('id', $productId);
+        
+        expect($productFromList['image'])->toContain(config('app.url') . '/storage/products/')
+            ->and($productFromList['image'])->toContain($imageName);
+    });
+
+    it('returns image with full URL in show endpoint', function () {
+        // Arrange
+        Storage::fake('public');
+        $image = UploadedFile::fake()->image('product.jpg', 640, 480);
+
+        $productData = [
+            'name' => 'Phone with Image',
+            'price' => 799.99,
+            'category' => 'Smartphones',
+            'image' => $image,
+        ];
+
+        // Act
+        $createResponse = $this->postJson('/api/products', $productData);
+        $productId = $createResponse->json('data.id');
+        $imageName = $createResponse->json('data.image');
+
+        $showResponse = $this->getJson("/api/products/{$productId}");
+
+        // Assert
+        $showResponse->assertSuccessful();
+        expect($showResponse->json('data.image'))->toContain(config('app.url') . '/storage/products/')
+            ->and($showResponse->json('data.image'))->toContain($imageName);
     });
 });

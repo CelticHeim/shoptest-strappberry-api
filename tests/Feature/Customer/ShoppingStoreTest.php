@@ -11,6 +11,8 @@
  */
 
 use App\Models\Product;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 describe('Shopping Store - List Products', function () {
     it('can list all products with pagination', function () {
@@ -154,5 +156,64 @@ describe('Shopping Store - List Products', function () {
         expect($response->json('data.data'))->toHaveCount(2);
         expect($response->json('data.per_page'))->toBe(10);
         expect($response->json('data.data.*.name'))->each->toContain('Laptop');
+    });
+
+    it('saves image with date format (MM_DD_YYYY) and returns full URL in shopping', function () {
+        // Arrange
+        Storage::fake('public');
+        $image = UploadedFile::fake()->image('product.png', 640, 480);
+
+        $productData = [
+            'name' => 'Product with Image',
+            'price' => 499.99,
+            'category' => 'Electronics',
+            'image' => $image,
+        ];
+
+        // Act
+        $createResponse = $this->postJson('/api/products', $productData);
+        $productId = $createResponse->json('data.id');
+        $imageUrl = $createResponse->json('data.image');
+        $imageName = basename($imageUrl);
+        $shoppingResponse = $this->getJson('/api/shopping');
+
+        // Assert
+        $createResponse->assertCreated();
+        expect($imageName)->toMatch('/\d{2}_\d{2}_\d{4}\.\w+/'); // MM_DD_YYYY.ext format
+        
+        Storage::disk('public')->assertExists('products/' . $imageName);
+
+        $productFromList = collect($shoppingResponse->json('data.data'))
+            ->firstWhere('id', $productId);
+        
+        expect($productFromList['image'])->toContain(config('app.url') . '/storage/products/')
+            ->and($productFromList['image'])->toContain($imageName);
+    });
+
+    it('returns image with full URL in shopping endpoint', function () {
+        // Arrange
+        Storage::fake('public');
+        $image = UploadedFile::fake()->image('product.jpg', 640, 480);
+
+        $productData = [
+            'name' => 'Phone with Image',
+            'price' => 799.99,
+            'category' => 'Smartphones',
+            'image' => $image,
+        ];
+
+        // Act
+        $createResponse = $this->postJson('/api/products', $productData);
+        $productId = $createResponse->json('data.id');
+        $imageName = $createResponse->json('data.image');
+        $shoppingResponse = $this->getJson('/api/shopping');
+
+        // Assert
+        $shoppingResponse->assertSuccessful();
+        $productFromList = collect($shoppingResponse->json('data.data'))
+            ->firstWhere('id', $productId);
+        
+        expect($productFromList['image'])->toContain(config('app.url') . '/storage/products/')
+            ->and($productFromList['image'])->toContain($imageName);
     });
 });
