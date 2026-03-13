@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\ShoppingController;
+use App\Http\Controllers\Api\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 // Public auth routes
@@ -44,4 +45,11 @@ Route::prefix('checkout')->middleware(['auth:api', 'customer'])->controller(Chec
 Route::prefix('purchases')->middleware(['auth:api', 'customer'])->controller(PurchaseController::class)->group(function () {
     Route::get('/', 'index')->name('purchases.index');
     Route::put('/{transaction}', 'update')->name('purchases.update');
+});
+
+// Protected transaction routes (customer only)
+Route::prefix('transactions')->middleware(['auth:api', 'customer'])->controller(TransactionController::class)->group(function () {
+    Route::get('/', 'index')->name('transactions.index');
+    Route::get('/{paymentId}/status', 'getStatus')->name('transactions.status');
+    Route::get('/{id}', 'show')->name('transactions.show');
 });

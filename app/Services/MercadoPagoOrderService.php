@@ -84,16 +84,36 @@ class MercadoPagoOrderService {
     }
 
     /**
-     * Obtener estado de un pago
+     * Obtener estado de un pago desde Mercado Pago
+     * Retorna solo los campos necesarios para mostrar el estado
      */
-    public function getPayment(int $paymentId): array {
+    public function getPaymentStatus(string $paymentId): array {
         $response = Http::withToken($this->accessToken)
             ->get("{$this->baseUrl}/v1/payments/{$paymentId}");
 
         if (!$response->successful()) {
-            throw new \Exception('Error getting payment: ' . $response->body());
+            throw new \Exception('Payment not found or API error: ' . $response->body());
         }
 
-        return $response->json();
+        $payment = $response->json();
+
+        return [
+            'id' => $payment['id'] ?? null,
+            'status' => $payment['status'] ?? 'unknown',
+            'status_detail' => $payment['status_detail'] ?? null,
+            'transaction_amount' => $payment['transaction_amount'] ?? 0,
+            'currency_id' => $payment['currency_id'] ?? 'MXN',
+            'payment_method_id' => $payment['payment_method_id'] ?? null,
+            'installments' => $payment['installments'] ?? 1,
+            'date_created' => $payment['date_created'] ?? null,
+            'date_last_updated' => $payment['date_last_updated'] ?? null,
+        ];
+    }
+
+    /**
+     * Obtener estado de un pago (alias para compatibilidad)
+     */
+    public function getPayment(string $paymentId): array {
+        return $this->getPaymentStatus($paymentId);
     }
 }
