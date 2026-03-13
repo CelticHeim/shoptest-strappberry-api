@@ -12,6 +12,7 @@ class UserSeeder extends Seeder {
             'email' => 'admin@mail.com',
             'password' => bcrypt('1234'),
             'email_verified_at' => now(),
+            'role' => 'admin',
         ]);
 
         User::create([
@@ -19,6 +20,7 @@ class UserSeeder extends Seeder {
             'email' => 'customer@mail.com',
             'password' => bcrypt('1234'),
             'email_verified_at' => now(),
+            'role' => 'customer',
         ]);
     }
 }
