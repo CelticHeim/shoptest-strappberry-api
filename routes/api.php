@@ -27,6 +27,5 @@ Route::get('/shopping', [ShoppingController::class, 'index'])->name('shopping.in
 // Protected purchase routes
 Route::prefix('purchases')->middleware('auth:api')->controller(PurchaseController::class)->group(function () {
     Route::get('/', 'index')->name('purchases.index');
-    Route::post('/', 'store')->name('purchases.store');
     Route::put('/{transaction}', 'update')->name('purchases.update');
 });
