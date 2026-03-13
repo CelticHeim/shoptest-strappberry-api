@@ -7,7 +7,10 @@ use Illuminate\Database\Seeder;
 
 class ProductSeeder extends Seeder {
     public function run() {
-        // 10 productos específicos de electrónica
+        // 20 productos aleatorios generados por factory (se crean primero)
+        Product::factory(20)->create();
+
+        // 10 productos específicos de electrónica (con timestamps más recientes)
         $specificProducts = [
             [
                 'name' => 'Laptop ASUS VivoBook 15',
@@ -61,11 +64,12 @@ class ProductSeeder extends Seeder {
             ],
         ];
 
-        foreach ($specificProducts as $product) {
+        $now = now();
+        foreach ($specificProducts as $index => $product) {
+            // Asignar timestamps más recientes (con segundos incrementales)
+            $product['created_at'] = $now->addSeconds($index + 1);
+            $product['updated_at'] = $now->addSeconds($index + 1);
             Product::create($product);
         }
-
-        // 20 productos aleatorios generados por factory
-        Product::factory(20)->create();
     }
 }
