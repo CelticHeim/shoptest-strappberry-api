@@ -35,6 +35,7 @@
  */
 
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -42,6 +43,7 @@ describe('Product Creation', function () {
     it('can create a product with all fields', function () {
         // Arrange
         Storage::fake('public');
+        $admin = User::factory()->admin()->create();
 
         $productData = [
             'name' => 'Laptop Dell XPS 13',
@@ -52,7 +54,7 @@ describe('Product Creation', function () {
         ];
 
         // Act
-        $response = $this->postJson('/api/products', $productData);
+        $response = $this->actingAs($admin)->postJson('/api/products', $productData);
 
         // Assert
         $response->assertCreated()
@@ -68,6 +70,7 @@ describe('Product Creation', function () {
     it('fails when name is missing', function () {
         // Arrange
         Storage::fake('public');
+        $admin = User::factory()->admin()->create();
 
         $productData = [
             'price' => 1299.99,
@@ -76,7 +79,7 @@ describe('Product Creation', function () {
         ];
 
         // Act
-        $response = $this->postJson('/api/products', $productData);
+        $response = $this->actingAs($admin)->postJson('/api/products', $productData);
 
         // Assert
         $response->assertUnprocessable()
@@ -86,6 +89,7 @@ describe('Product Creation', function () {
     it('fails when price is missing', function () {
         // Arrange
         Storage::fake('public');
+        $admin = User::factory()->admin()->create();
 
         $productData = [
             'name' => 'Laptop Dell XPS 13',
@@ -94,7 +98,7 @@ describe('Product Creation', function () {
         ];
 
         // Act
-        $response = $this->postJson('/api/products', $productData);
+        $response = $this->actingAs($admin)->postJson('/api/products', $productData);
 
         // Assert
         $response->assertUnprocessable()
@@ -104,6 +108,7 @@ describe('Product Creation', function () {
     it('saves image to storage when provided', function () {
         // Arrange
         Storage::fake('public');
+        $admin = User::factory()->admin()->create();
 
         $image = UploadedFile::fake()->image('product.jpg', 640, 480);
 
@@ -114,7 +119,7 @@ describe('Product Creation', function () {
         ];
 
         // Act
-        $response = $this->postJson('/api/products', $productData);
+        $response = $this->actingAs($admin)->postJson('/api/products', $productData);
 
         // Assert
         $response->assertCreated();
@@ -308,6 +313,7 @@ describe('Product Updates', function () {
     it('can update a product with all fields', function () {
         // Arrange
         Storage::fake('public');
+        $admin = User::factory()->admin()->create();
         $product = Product::factory()->create();
 
         $updateData = [
@@ -319,7 +325,7 @@ describe('Product Updates', function () {
         ];
 
         // Act
-        $response = $this->putJson("/api/products/{$product->id}", $updateData);
+        $response = $this->actingAs($admin)->putJson("/api/products/{$product->id}", $updateData);
 
         // Assert
         $response->assertSuccessful()
@@ -335,6 +341,7 @@ describe('Product Updates', function () {
     it('fails when name is missing during update', function () {
         // Arrange
         Storage::fake('public');
+        $admin = User::factory()->admin()->create();
         $product = Product::factory()->create();
 
         $updateData = [
@@ -342,7 +349,7 @@ describe('Product Updates', function () {
         ];
 
         // Act
-        $response = $this->putJson("/api/products/{$product->id}", $updateData);
+        $response = $this->actingAs($admin)->putJson("/api/products/{$product->id}", $updateData);
 
         // Assert
         $response->assertUnprocessable()
@@ -352,6 +359,7 @@ describe('Product Updates', function () {
     it('fails when price is missing during update', function () {
         // Arrange
         Storage::fake('public');
+        $admin = User::factory()->admin()->create();
         $product = Product::factory()->create();
 
         $updateData = [
@@ -359,7 +367,7 @@ describe('Product Updates', function () {
         ];
 
         // Act
-        $response = $this->putJson("/api/products/{$product->id}", $updateData);
+        $response = $this->actingAs($admin)->putJson("/api/products/{$product->id}", $updateData);
 
         // Assert
         $response->assertUnprocessable()
@@ -369,6 +377,7 @@ describe('Product Updates', function () {
     it('saves new image to storage when provided during update', function () {
         // Arrange
         Storage::fake('public');
+        $admin = User::factory()->admin()->create();
         $product = Product::factory()->create();
 
         $newImage = UploadedFile::fake()->image('new-product.jpg', 640, 480);
@@ -380,7 +389,7 @@ describe('Product Updates', function () {
         ];
 
         // Act
-        $response = $this->putJson("/api/products/{$product->id}", $updateData);
+        $response = $this->actingAs($admin)->putJson("/api/products/{$product->id}", $updateData);
 
         // Assert
         $response->assertSuccessful();
@@ -393,10 +402,11 @@ describe('Product Updates', function () {
 describe('Product Deletion', function () {
     it('can soft delete a product', function () {
         // Arrange
+        $admin = User::factory()->admin()->create();
         $product = Product::factory()->create();
 
         // Act
-        $response = $this->deleteJson("/api/products/{$product->id}");
+        $response = $this->actingAs($admin)->deleteJson("/api/products/{$product->id}");
 
         // Assert
         $response->assertSuccessful();
@@ -421,6 +431,7 @@ describe('Image Storage and Accessibility', function () {
     it('saves image with date format (MM_DD_YYYY) and returns full URL in index', function () {
         // Arrange
         Storage::fake('public');
+        $admin = User::factory()->admin()->create();
         $image = UploadedFile::fake()->image('product.png', 640, 480);
 
         $productData = [
@@ -431,7 +442,7 @@ describe('Image Storage and Accessibility', function () {
         ];
 
         // Act
-        $response = $this->postJson('/api/products', $productData);
+        $response = $this->actingAs($admin)->postJson('/api/products', $productData);
         $productId = $response->json('data.id');
         $imageUrl = $response->json('data.image');
         $imageName = basename($imageUrl);
@@ -453,6 +464,7 @@ describe('Image Storage and Accessibility', function () {
     it('returns image with full URL in show endpoint', function () {
         // Arrange
         Storage::fake('public');
+        $admin = User::factory()->admin()->create();
         $image = UploadedFile::fake()->image('product.jpg', 640, 480);
 
         $productData = [
@@ -463,7 +475,7 @@ describe('Image Storage and Accessibility', function () {
         ];
 
         // Act
-        $createResponse = $this->postJson('/api/products', $productData);
+        $createResponse = $this->actingAs($admin)->postJson('/api/products', $productData);
         $productId = $createResponse->json('data.id');
         $imageName = $createResponse->json('data.image');
 

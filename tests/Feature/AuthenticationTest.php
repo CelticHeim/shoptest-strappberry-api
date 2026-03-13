@@ -8,8 +8,12 @@
  * - Login requiere email válido (validación)
  * - Login requiere password (validación)
  *
+ * // Rol del Usuario
+ * - El rol del usuario (customer) está presente en /api/auth/user
+ * - El rol del usuario (admin) está presente en /api/auth/user
+ *
  * // Usuario Autenticado
- * - Con access_token válido, /api/auth/user devuelve datos del usuario
+ * - Con access_token válido, /api/auth/user devuelve datos del usuario incluyendo el rol
  * - Sin access_token, /api/auth/user retorna error 401
  * - Con token expirado, /api/auth/user retorna error 401
  *
@@ -27,6 +31,38 @@
 use App\Models\User;
 
 describe('JWT Authentication', function () {
+    describe('User Role', function () {
+        it('customer user data includes customer role', function () {
+            // Arrange
+            $user = User::factory()->customer()->create();
+            $token = generateJWTToken($user);
+
+            // Act
+            $response = $this->getJson('/api/auth/user', [
+                'Authorization' => "Bearer {$token}",
+            ]);
+
+            // Assert
+            $response->assertSuccessful();
+            expect($response->json('data.role'))->toBe('customer');
+        });
+
+        it('admin user data includes admin role', function () {
+            // Arrange
+            $user = User::factory()->admin()->create();
+            $token = generateJWTToken($user);
+
+            // Act
+            $response = $this->getJson('/api/auth/user', [
+                'Authorization' => "Bearer {$token}",
+            ]);
+
+            // Assert
+            $response->assertSuccessful();
+            expect($response->json('data.role'))->toBe('admin');
+        });
+    });
+
     describe('Login', function () {
         it('can login with valid credentials and receive access_token', function () {
             // Arrange
@@ -103,7 +139,7 @@ describe('JWT Authentication', function () {
     describe('Authenticated User', function () {
         it('can retrieve user data with valid token', function () {
             // Arrange
-            $user = User::factory()->create();
+            $user = User::factory()->customer()->create();
             $token = generateJWTToken($user);
 
             // Act
@@ -119,11 +155,13 @@ describe('JWT Authentication', function () {
                         'id',
                         'email',
                         'name',
+                        'role',
                     ],
                 ]);
 
             expect($response->json('data.id'))->toBe($user->id);
             expect($response->json('data.email'))->toBe($user->email);
+            expect($response->json('data.role'))->toBe('customer');
         });
 
         it('cannot access user endpoint without token', function () {

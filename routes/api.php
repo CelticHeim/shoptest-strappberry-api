@@ -20,20 +20,29 @@ Route::prefix('auth')->middleware('auth:api')->controller(AuthController::class)
 });
 
 // Product routes
-Route::apiResource('products', ProductController::class);
+Route::get('products', [ProductController::class, 'index'])->name('products.index');
+Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');
+
+Route::middleware('auth:api')->group(function () {
+    Route::middleware('admin')->group(function () {
+        Route::post('products', [ProductController::class, 'store'])->name('products.store');
+        Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
+        Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+    });
+});
 
 // Public shopping store routes
 Route::get('/shopping', [ShoppingController::class, 'index'])->name('shopping.index');
 
-// Protected checkout routes
-Route::prefix('checkout')->middleware('auth:api')->controller(CheckoutController::class)->group(function () {
+// Protected checkout routes (customer only)
+Route::prefix('checkout')->middleware(['auth:api', 'customer'])->controller(CheckoutController::class)->group(function () {
     Route::post('/', 'createPreference')->name('checkout.create');
     Route::get('/verify-payment/{payment_id}', 'verifyPayment')->name('checkout.verify');
     Route::post('/confirm', 'confirmPurchase')->name('checkout.confirm');
 });
 
-// Protected purchase routes
-Route::prefix('purchases')->middleware('auth:api')->controller(PurchaseController::class)->group(function () {
+// Protected purchase routes (customer only)
+Route::prefix('purchases')->middleware(['auth:api', 'customer'])->controller(PurchaseController::class)->group(function () {
     Route::get('/', 'index')->name('purchases.index');
     Route::put('/{transaction}', 'update')->name('purchases.update');
 });

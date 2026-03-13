@@ -11,6 +11,7 @@
  */
 
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -161,6 +162,7 @@ describe('Shopping Store - List Products', function () {
     it('saves image with date format (MM_DD_YYYY) and returns full URL in shopping', function () {
         // Arrange
         Storage::fake('public');
+        $admin = User::factory()->admin()->create();
         $image = UploadedFile::fake()->image('product.png', 640, 480);
 
         $productData = [
@@ -171,7 +173,7 @@ describe('Shopping Store - List Products', function () {
         ];
 
         // Act
-        $createResponse = $this->postJson('/api/products', $productData);
+        $createResponse = $this->actingAs($admin)->postJson('/api/products', $productData);
         $productId = $createResponse->json('data.id');
         $imageUrl = $createResponse->json('data.image');
         $imageName = basename($imageUrl);
@@ -193,6 +195,7 @@ describe('Shopping Store - List Products', function () {
     it('returns image with full URL in shopping endpoint', function () {
         // Arrange
         Storage::fake('public');
+        $admin = User::factory()->admin()->create();
         $image = UploadedFile::fake()->image('product.jpg', 640, 480);
 
         $productData = [
@@ -203,7 +206,7 @@ describe('Shopping Store - List Products', function () {
         ];
 
         // Act
-        $createResponse = $this->postJson('/api/products', $productData);
+        $createResponse = $this->actingAs($admin)->postJson('/api/products', $productData);
         $productId = $createResponse->json('data.id');
         $imageName = $createResponse->json('data.image');
         $shoppingResponse = $this->getJson('/api/shopping');
