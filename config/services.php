@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'mercado_pago' => [
+        'access_token' => env('MERCADO_PAGO_ACCESS_TOKEN'),
+        'public_key' => env('MERCADO_PAGO_PUBLIC_KEY'),
+        'redirect_url' => env('MERCADO_PAGO_REDIRECT_URL', 'http://localhost:3000/checkout-success'),
+    ],
+
 ];

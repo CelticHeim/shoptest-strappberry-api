@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Purchase\CreatePreferenceRequest;
+use App\Http\Requests\Api\Purchase\ConfirmPurchaseRequest;
 use App\Http\Requests\Api\Purchase\UpdatePurchaseStatusRequest;
+use App\Models\Product;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class PurchaseController extends Controller {
     public function index(Request $request) {

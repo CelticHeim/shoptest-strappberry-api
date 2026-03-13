@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\ShoppingController;
@@ -23,6 +24,13 @@ Route::apiResource('products', ProductController::class);
 
 // Public shopping store routes
 Route::get('/shopping', [ShoppingController::class, 'index'])->name('shopping.index');
+
+// Protected checkout routes
+Route::prefix('checkout')->middleware('auth:api')->controller(CheckoutController::class)->group(function () {
+    Route::post('/', 'createPreference')->name('checkout.create');
+    Route::get('/verify-payment/{payment_id}', 'verifyPayment')->name('checkout.verify');
+    Route::post('/confirm', 'confirmPurchase')->name('checkout.confirm');
+});
 
 // Protected purchase routes
 Route::prefix('purchases')->middleware('auth:api')->controller(PurchaseController::class)->group(function () {

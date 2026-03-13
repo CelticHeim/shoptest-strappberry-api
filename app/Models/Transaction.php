@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model {
-    protected $fillable = ['user_id', 'status', 'total_amount'];
+    protected $fillable = ['user_id', 'status', 'total_amount', 'mercado_pago_payment_id'];
 
     protected $casts = [
         'total_amount' => 'float',

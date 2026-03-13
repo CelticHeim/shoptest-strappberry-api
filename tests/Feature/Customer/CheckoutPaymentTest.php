@@ -48,19 +48,14 @@ describe('Checkout - Create Payment Preference', function () {
         $checkoutData = [
             'items' => [
                 [
-                    'id' => $products[0]->id,
-                    'title' => $products[0]->name,
+                    'product_id' => $products[0]->id,
                     'quantity' => 2,
-                    'unit_price' => $products[0]->price,
                 ],
                 [
-                    'id' => $products[1]->id,
-                    'title' => $products[1]->name,
+                    'product_id' => $products[1]->id,
                     'quantity' => 1,
-                    'unit_price' => $products[1]->price,
                 ],
             ],
-            'total_amount' => 300.00,
         ];
 
         // Act
@@ -78,9 +73,10 @@ describe('Checkout - Create Payment Preference', function () {
             ->assertJsonPath('data.preference_id', 'pref_123456')
             ->assertJsonPath('data.init_point', 'https://www.mercadopago.com.ar/checkout/v1/p?pref_id=pref_123456');
 
+        // Verify that server sent correct data to MP (with product data from BD)
         Http::assertSent(function (Request $request) {
             return $request->url() === 'https://api.mercadopago.com/checkout/preferences' &&
-                $request->method() === 'POST';
+                   $request->method() === 'POST';
         });
     });
 
@@ -99,13 +95,10 @@ describe('Checkout - Create Payment Preference', function () {
         $checkoutData = [
             'items' => [
                 [
-                    'id' => $products[0]->id,
-                    'title' => $products[0]->name,
+                    'product_id' => $products[0]->id,
                     'quantity' => 1,
-                    'unit_price' => $products[0]->price,
                 ],
             ],
-            'total_amount' => 100.00,
         ];
 
         // Act
@@ -120,12 +113,12 @@ describe('Checkout - Create Payment Preference', function () {
         // Arrange
         $user = User::factory()->create();
 
-        // Act - Missing items and total_amount
+        // Act - Missing items
         $response = $this->actingAs($user)->postJson('/api/checkout', []);
 
         // Assert
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['items', 'total_amount']);
+            ->assertJsonValidationErrors(['items']);
     });
 });
 
@@ -136,7 +129,7 @@ describe('Checkout - Verify Payment Status', function () {
             'https://api.mercadopago.com/v1/payments/988989*' => Http::response([
                 'id' => 988989,
                 'status' => 'approved',
-                'transaction_amount' => 300.00,
+                'transaction_amount' => 300.0,
                 'payer' => ['email' => 'test@example.com'],
             ], 200),
         ]);
@@ -149,8 +142,8 @@ describe('Checkout - Verify Payment Status', function () {
 
         // Assert
         $response->assertSuccessful()
-            ->assertJsonPath('data.status', 'approved')
-            ->assertJsonPath('data.amount', 300.00);
+            ->assertJsonPath('data.status', 'approved');
+        expect((float) $response->json('data.amount'))->toBe(300.00);
     });
 
     it('can verify a pending payment from mercado pago', function () {
@@ -209,15 +202,12 @@ describe('Checkout - Confirm Purchase After Payment', function () {
                 [
                     'product_id' => $products[0]->id,
                     'quantity' => 2,
-                    'unit_price' => 100.00,
                 ],
                 [
                     'product_id' => $products[1]->id,
                     'quantity' => 1,
-                    'unit_price' => 100.00,
                 ],
             ],
-            'total_amount' => 300.00,
         ];
 
         Http::fake([
@@ -274,10 +264,8 @@ describe('Checkout - Confirm Purchase After Payment', function () {
                 [
                     'product_id' => $products[0]->id,
                     'quantity' => 1,
-                    'unit_price' => 150.00,
                 ],
             ],
-            'total_amount' => 150.00,
         ];
 
         // Act
@@ -297,7 +285,7 @@ describe('Checkout - Confirm Purchase After Payment', function () {
 
         // Assert
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['payment_id', 'items', 'total_amount']);
+            ->assertJsonValidationErrors(['payment_id', 'items']);
     });
 
     it('registers products in transaction_product with correct data', function () {
@@ -320,10 +308,8 @@ describe('Checkout - Confirm Purchase After Payment', function () {
                 [
                     'product_id' => $product->id,
                     'quantity' => 3,
-                    'unit_price' => 150.00,
                 ],
             ],
-            'total_amount' => 450.00,
         ];
 
         // Act

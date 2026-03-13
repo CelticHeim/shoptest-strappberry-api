@@ -107,13 +107,13 @@ describe('Purchase Management - Get Purchase History', function () {
         $user = User::factory()->create();
         $products = Product::factory(2)->create();
 
-        createTransaction($user->id, 'paid', 500.00, 988989)->products()->attach(
+        createTransaction($user->id, 'paid', 500.00, 988989)->products()->attach([
             $products[0]->id => ['quantity' => 1, 'unit_price' => 500.00, 'subtotal' => 500.00]
-        );
+        ]);
 
-        createTransaction($user->id, 'pending', 250.00)->products()->attach(
+        createTransaction($user->id, 'pending', 250.00)->products()->attach([
             $products[1]->id => ['quantity' => 1, 'unit_price' => 250.00, 'subtotal' => 250.00]
-        );
+        ]);
 
         // Act
         $response = $this->actingAs($user)->getJson('/api/purchases');
