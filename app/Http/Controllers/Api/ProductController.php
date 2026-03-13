@@ -15,7 +15,7 @@ class ProductController extends Controller {
 
         $products = Product::filterByName($request->input('search'))
             ->filterByCategories($request->input('categories'))
-            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->paginate($perPage);
 
         return response()->json([
