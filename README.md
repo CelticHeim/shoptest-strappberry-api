@@ -27,14 +27,14 @@
 
 ### Usuario Admin
 ```
-Email: admin@example.com
+Email: admin@mail.com
 Password: 1234
 Role: admin
 ```
 
 ### Usuario Cliente
 ```
-Email: customer@example.com
+Email: customer@mail.com
 Password: 1234
 Role: customer
 ```
